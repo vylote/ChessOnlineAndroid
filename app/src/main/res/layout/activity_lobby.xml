@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#0F0F0F">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:gravity="center"
+        android:orientation="horizontal">
+
+        <LinearLayout
+            android:layout_width="120dp"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:orientation="vertical">
+            <View
+                android:id="@+id/viewMyColor"
+                android:layout_width="80dp"
+                android:layout_height="80dp"
+                android:background="@drawable/circle_white"/>
+            <TextView
+                android:id="@+id/txtMyName"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="BẠN"
+                android:textColor="#FFFFFF"
+                android:textStyle="bold"
+                android:layout_marginTop="12dp"/>
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text=" VS "
+            android:textColor="#333333"
+            android:textSize="48sp"
+            android:textStyle="italic|bold"
+            android:layout_marginHorizontal="24dp"/>
+
+        <LinearLayout
+            android:layout_width="120dp"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:orientation="vertical">
+            <View
+                android:id="@+id/viewOppColor"
+                android:layout_width="80dp"
+                android:layout_height="80dp"
+                android:background="@drawable/circle_dashed"/>
+            <TextView
+                android:id="@+id/txtOppName"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="ĐANG ĐỢI..."
+                android:textColor="#666666"
+                android:layout_marginTop="12dp"/>
+        </LinearLayout>
+    </LinearLayout>
+</RelativeLayout>
