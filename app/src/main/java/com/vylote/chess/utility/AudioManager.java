@@ -8,50 +8,48 @@ import java.util.HashMap;
 
 public class AudioManager {
     private Context context;
-
-    // Quản lý BGM (Nhạc nền)
     private MediaPlayer bgmPlayer;
     private int currentBgmResId = -1;
-    private float bgmVolume = 0.5f; // Tỉ lệ 0.0 đến 1.0
-
-    // Quản lý SFX (Hiệu ứng)
+    private float bgmVolume = 1.0f; // Mặc định 100%
     private SoundPool soundPool;
-    private HashMap<Integer, Integer> soundMap; // Map giữa Resource ID và Sound ID
-    private float sfxVolume = 1.0f;
+    private HashMap<Integer, Integer> soundMap;
+    private float sfxVolume = 1.0f; // Mặc định 100%
 
     public AudioManager(Context context) {
         this.context = context;
         this.soundMap = new HashMap<>();
-
-        // Khởi tạo SoundPool cho SFX
         AudioAttributes audioAttributes = new AudioAttributes.Builder()
                 .setUsage(AudioAttributes.USAGE_GAME)
                 .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
                 .build();
-
         soundPool = new SoundPool.Builder()
-                .setMaxStreams(5) // Cho phép phát tối đa 5 âm thanh cùng lúc
+                .setMaxStreams(10)
                 .setAudioAttributes(audioAttributes)
                 .build();
     }
 
-    // --- QUẢN LÝ BGM ---
+    public float getBgmVolume() { return bgmVolume; }
+    public float getSfxVolume() { return sfxVolume; }
+
     public void setBGMVolumeFromSlider(int value) {
         this.bgmVolume = value / 100.0f;
-        if (bgmPlayer != null) {
-            bgmPlayer.setVolume(bgmVolume, bgmVolume);
-        }
+        if (bgmPlayer != null) bgmPlayer.setVolume(bgmVolume, bgmVolume);
+    }
+
+    public void setSFXVolumeFromSlider(int value) {
+        this.sfxVolume = value / 100.0f;
     }
 
     public void playBGM(int resId) {
         if (currentBgmResId == resId && bgmPlayer != null && bgmPlayer.isPlaying()) return;
-
         stopBGM();
         currentBgmResId = resId;
         bgmPlayer = MediaPlayer.create(context, resId);
-        bgmPlayer.setLooping(true); // Lặp lại liên tục
-        bgmPlayer.setVolume(bgmVolume, bgmVolume);
-        bgmPlayer.start();
+        if (bgmPlayer != null) {
+            bgmPlayer.setLooping(true);
+            bgmPlayer.setVolume(bgmVolume, bgmVolume);
+            bgmPlayer.start();
+        }
     }
 
     public void stopBGM() {
@@ -63,41 +61,35 @@ public class AudioManager {
         currentBgmResId = -1;
     }
 
-    // --- QUẢN LÝ SFX ---
-    public void setSFXVolumeFromSlider(int value) {
-        this.sfxVolume = value / 100.0f;
-    }
-
-    /**
-     * Nạp trước âm thanh vào bộ nhớ để phát ngay lập tức không trễ
-     */
     public void loadSFX(int resId) {
         if (!soundMap.containsKey(resId)) {
-            int soundId = soundPool.load(context, resId, 1);
-            soundMap.put(resId, soundId);
+            soundMap.put(resId, soundPool.load(context, resId, 1));
         }
     }
 
     public void playSFX(int resId) {
         Integer soundId = soundMap.get(resId);
         if (soundId != null) {
-            // Phát âm thanh ngay lập tức
             soundPool.play(soundId, sfxVolume, sfxVolume, 1, 0, 1.0f);
         } else {
-            // Nếu chưa nạp thì nạp và phát (có thể trễ lần đầu)
-            int newSoundId = soundPool.load(context, resId, 1);
-            soundMap.put(resId, newSoundId);
-            soundPool.setOnLoadCompleteListener((pool, id, status) -> {
-                if (status == 0) pool.play(id, sfxVolume, sfxVolume, 1, 0, 1.0f);
-            });
+            loadSFX(resId); // Nạp nếu chưa có
         }
     }
 
+    // Thêm vào cuối class AudioManager.java
     public void release() {
+        // 1. Dừng và giải phóng Nhạc nền
         stopBGM();
+
+        // 2. Giải phóng SoundPool (Hiệu ứng âm thanh)
         if (soundPool != null) {
             soundPool.release();
             soundPool = null;
+        }
+
+        // 3. Xóa Map để dọn dẹp bộ nhớ
+        if (soundMap != null) {
+            soundMap.clear();
         }
     }
 }

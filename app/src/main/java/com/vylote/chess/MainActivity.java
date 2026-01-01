@@ -16,6 +16,8 @@ import com.vylote.chess.controller.DiscoveryService;
 import com.vylote.chess.controller.GameController;
 import model.PlayerProfile;
 import com.vylote.chess.ui.ChessView;
+import com.vylote.chess.utility.AudioManager;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -31,6 +33,7 @@ public class MainActivity extends AppCompatActivity implements GameUIListener {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        audioManager = new AudioManager(this); // Khởi tạo sớm
         if (getSupportActionBar() != null) getSupportActionBar().hide();
         applyImmersiveMode();
         discoveryService = new DiscoveryService(this);
@@ -53,7 +56,8 @@ public class MainActivity extends AppCompatActivity implements GameUIListener {
     // ================= MENU CHÍNH =================
     public void showMenu() {
         setContentView(R.layout.activity_menu);
-        controller = new GameController(this, null, this);
+        audioManager.playBGM(R.raw.menu_theme);
+        controller = new GameController(this, null, this, audioManager);
         findViewById(R.id.btnNewGame).setOnClickListener(v -> { launchChessBoard(); controller.startNewGame(); });
         findViewById(R.id.btnMultiplayer).setOnClickListener(v -> showMultiplayerChoice());
         findViewById(R.id.btnExit).setOnClickListener(v -> finish());
@@ -130,6 +134,7 @@ public class MainActivity extends AppCompatActivity implements GameUIListener {
 
     public void launchChessBoard() {
         setContentView(R.layout.activity_main);
+        audioManager.playBGM(R.raw.game_theme);
         ChessView chessView = findViewById(R.id.chessView);
         txtTimer = findViewById(R.id.txtTimer);
         txtStatus = findViewById(R.id.txtStatus);
@@ -173,6 +178,8 @@ public class MainActivity extends AppCompatActivity implements GameUIListener {
 
     @Override
     public void onTimerUpdate(int seconds) { runOnUiThread(() -> { if(txtTimer != null) txtTimer.setText(String.format("%02d", seconds)); }); }
+
+    private AudioManager audioManager;
 
     @Override
     public void onTurnUpdate(String text, int color, boolean isMyTurn) {
@@ -277,5 +284,61 @@ public class MainActivity extends AppCompatActivity implements GameUIListener {
                 Toast.makeText(this, "Đã kết nối! Đợi Host bắt đầu...", Toast.LENGTH_SHORT).show();
             }
         });
+    }
+
+    private void showSettingsDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("SETTINGS");
+
+        // Tạo Layout cho Dialog bằng code (hoặc inflate từ xml nếu muốn đẹp hơn)
+        LinearLayout layout = new LinearLayout(this);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setPadding(50, 40, 50, 40);
+
+        // --- SeekBar cho BGM ---
+        TextView txtBgm = new TextView(this);
+        txtBgm.setText("Music Volume");
+        SeekBar sbBgm = new SeekBar(this);
+        sbBgm.setMax(100);
+        sbBgm.setProgress((int)(audioManager.getBgmVolume() * 100));
+        sbBgm.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                audioManager.setBGMVolumeFromSlider(progress);
+            }
+            @Override public void onStartTrackingTouch(SeekBar seekBar) {}
+            @Override public void onStopTrackingTouch(SeekBar seekBar) {}
+        });
+
+        // --- SeekBar cho SFX ---
+        TextView txtSfx = new TextView(this);
+        txtSfx.setText("\nSound Effects");
+        SeekBar sbSfx = new SeekBar(this);
+        sbSfx.setMax(100);
+        sbSfx.setProgress((int)(audioManager.getSfxVolume() * 100));
+        sbSfx.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                audioManager.setSFXVolumeFromSlider(progress);
+                if (fromUser) audioManager.playSFX(R.raw.move); // Test tiếng khi kéo slider
+            }
+            @Override public void onStartTrackingTouch(SeekBar seekBar) {}
+            @Override public void onStopTrackingTouch(SeekBar seekBar) {}
+        });
+
+        layout.addView(txtBgm);
+        layout.addView(sbBgm);
+        layout.addView(txtSfx);
+        layout.addView(sbSfx);
+
+        builder.setView(layout);
+        builder.setPositiveButton("OK", null);
+        builder.show();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (audioManager != null) audioManager.release();
     }
 }
