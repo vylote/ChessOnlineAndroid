@@ -20,29 +20,38 @@ public class DiscoveryService {
             lock.setReferenceCounted(false); // Đổi thành false để quản lý thủ công chính xác hơn
         }
     }
+    // Trong lớp DiscoveryService của Android
     public void startListening(OnHostDiscovered callback) {
         running = true;
-        if (lock != null) lock.acquire(); // Bắt đầu cho phép nhận gói tin UDP
+        if (lock != null) lock.acquire(); // BẮT BUỘC để Android nhận được gói tin UDP
+
         new Thread(() -> {
             try (DatagramSocket socket = new DatagramSocket(UDP_PORT)) {
-                socket.setSoTimeout(5000);
+                socket.setSoTimeout(5000); // Tránh treo luồng
                 byte[] buffer = new byte[1024];
+
                 while (running) {
                     try {
                         DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
                         socket.receive(packet);
                         String msg = new String(packet.getData(), 0, packet.getLength());
-                        if (msg.startsWith(BROADCAST_MSG)) {
+
+                        if (msg.startsWith(BROADCAST_MSG)) { // "CHESS_HOST:"
                             String[] parts = msg.split(":");
-                            callback.onDiscovered(new PlayerProfile(parts[1], 0, packet.getAddress().getHostAddress()));
+                            String name = parts[1];
+                            int color = Integer.parseInt(parts[2]);
+                            String ip = packet.getAddress().getHostAddress();
+
+                            // Trả về thông tin Host tìm thấy cho UI
+                            callback.onDiscovered(new PlayerProfile(name, color, ip));
                         }
                     } catch (Exception ignored) {}
                 }
-            } catch (Exception e) { e.printStackTrace();
+            } catch (Exception e) {
+                e.printStackTrace();
             } finally {
-                if (lock != null && lock.isHeld()) lock.release();
+                stop(); // Giải phóng lock khi kết thúc
             }
-            if (lock != null && lock.isHeld()) lock.release();
         }).start();
     }
 

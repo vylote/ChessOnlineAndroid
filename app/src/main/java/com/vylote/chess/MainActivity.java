@@ -29,7 +29,7 @@ public class MainActivity extends AppCompatActivity implements GameUIListener {
         super.onCreate(savedInstanceState);
         if (getSupportActionBar() != null) getSupportActionBar().hide();
 
-        applyImmersiveMode(); // Ẩn pin, sóng, wifi
+        applyImmersiveMode(); // Ẩn thanh trạng thái hệ thống
         discoveryService = new DiscoveryService(this);
         showMenu();
     }
@@ -48,7 +48,7 @@ public class MainActivity extends AppCompatActivity implements GameUIListener {
     }
 
     // =========================================================
-    // NHÓM 1: MENU CHÍNH (4 LỰA CHỌN)
+    // MENU CHÍNH
     // =========================================================
     public void showMenu() {
         setContentView(R.layout.activity_menu);
@@ -56,22 +56,22 @@ public class MainActivity extends AppCompatActivity implements GameUIListener {
 
         findViewById(R.id.btnNewGame).setOnClickListener(v -> { launchChessBoard(); controller.startNewGame(); });
         findViewById(R.id.btnMultiplayer).setOnClickListener(v -> showMultiplayerChoice());
-        findViewById(R.id.btnSaveLoad).setOnClickListener(v -> Toast.makeText(this, "Save/Load Offline Only", Toast.LENGTH_SHORT).show());
+        findViewById(R.id.btnSaveLoad).setOnClickListener(v -> Toast.makeText(this, "Tính năng đang phát triển", Toast.LENGTH_SHORT).show());
         findViewById(R.id.btnExit).setOnClickListener(v -> finish());
     }
 
     public void showMultiplayerChoice() {
-        String[] options = {"Host Game", "Join Game", "Cancel"};
+        String[] options = {"Host Game (Tạo phòng)", "Join Game (Tìm phòng)", "Hủy"};
         new AlertDialog.Builder(this)
-                .setTitle("MULTIPLAYER")
+                .setTitle("CHẾ ĐỘ CHƠI MẠNG")
                 .setItems(options, (dialog, which) -> {
                     if (which == 0) showHostSetupDialog();
-                    else if (which == 1) showJoinLobby(); // Tự tìm phòng trong mạng LAN/Radmin
+                    else if (which == 1) showJoinLobby();
                 }).show();
     }
 
     // =========================================================
-    // NHÓM 2: LOGIC HOST & JOIN (LAN / RADMIN)
+    // LOGIC MULTIPLAYER (LAN / VPN)
     // =========================================================
     private void showHostSetupDialog() {
         View v = getLayoutInflater().inflate(R.layout.dialog_host_setup, null);
@@ -79,42 +79,78 @@ public class MainActivity extends AppCompatActivity implements GameUIListener {
         final RadioGroup rg = v.findViewById(R.id.rgColor);
 
         new AlertDialog.Builder(this)
+                .setTitle("CẤU HÌNH PHÒNG")
                 .setView(v)
-                .setPositiveButton("CREATE", (dialog, which) -> {
+                .setPositiveButton("TẠO PHÒNG", (dialog, which) -> {
                     String name = edtName.getText().toString().trim();
-                    if(name.isEmpty()) name = "Host Player";
+                    if(name.isEmpty()) name = "Android Player";
                     int color = (rg.getCheckedRadioButtonId() == R.id.rbWhite) ? 0 : 1;
 
                     controller.setMyProfile(name, color);
-                    controller.setupMultiplayer(true, color, null);
-                    discoveryService.startBroadcasting(name, color);
+                    controller.setupMultiplayer(true, color, null); // Mở Server cổng 5555
+                    discoveryService.startBroadcasting(name, color); // Phát tín hiệu cổng 8888
 
-                    showLobbyUI(name, color, null); // Chuyển sang màn hình VS
-                }).setNegativeButton("Cancel", null).show();
+                    showLobbyUI(name, color, null);
+                }).setNegativeButton("Hủy", null).show();
     }
 
     private void showJoinLobby() {
         discoveredHosts.clear();
-        ArrayList<String> hostNames = new ArrayList<>();
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, hostNames);
+        final ArrayList<String> hostNames = new ArrayList<>();
+        final ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, hostNames);
 
-        new AlertDialog.Builder(this)
-                .setTitle("Searching LAN / Radmin...")
+        // Hiển thị một Dialog duy nhất chứa cả danh sách tự động và nút thủ công
+        AlertDialog lobbyDialog = new AlertDialog.Builder(this)
+                .setTitle("ĐANG TÌM PHÒNG TRONG MẠNG...")
                 .setAdapter(adapter, (dialog, which) -> {
                     PlayerProfile selected = discoveredHosts.get(which);
-                    discoveryService.stop();
-                    controller.setMyProfile("Joiner", selected.color == 0 ? 1 : 0);
-                    controller.setupMultiplayer(false, selected.color == 0 ? 1 : 0, selected.ip);
-                    showLobbyUI("Joiner", selected.color == 0 ? 1 : 0, selected);
+                    connectToHost(selected.ip, selected.color);
                 })
-                .setNegativeButton("Hủy", (d, w) -> discoveryService.stop()).show();
+                .setNeutralButton("NHẬP IP THỦ CÔNG", (d, w) -> {
+                    discoveryService.stop();
+                    showManualIPDialog(); // Giải pháp cho VPN/Radmin
+                })
+                .setNegativeButton("HỦY", (d, w) -> discoveryService.stop())
+                .create();
 
+        // Lắng nghe tín hiệu UDP 8888 từ PC
         discoveryService.startListening(host -> {
-            if (!hostNames.contains(host.name + " (" + host.ip + ")")) {
+            String entry = host.name + " (" + host.ip + ")";
+            if (!hostNames.contains(entry)) {
                 discoveredHosts.add(host);
-                runOnUiThread(() -> { hostNames.add(host.name + " (" + host.ip + ")"); adapter.notifyDataSetChanged(); });
+                runOnUiThread(() -> {
+                    hostNames.add(entry);
+                    adapter.notifyDataSetChanged();
+                });
             }
         });
+
+        lobbyDialog.show();
+    }
+
+    private void showManualIPDialog() {
+        final EditText input = new EditText(this);
+        input.setHint("Ví dụ: 192.168.1.5 hoặc 10.147.x.x");
+        input.setPadding(50, 40, 50, 40);
+
+        new AlertDialog.Builder(this)
+                .setTitle("NHẬP IP MÁY CHỦ (PC)")
+                .setMessage("Nhập địa chỉ IP của PC để kết nối trực tiếp")
+                .setView(input)
+                .setPositiveButton("KẾT NỐI", (dialog, which) -> {
+                    String ip = input.getText().toString().trim();
+                    if (!ip.isEmpty()) connectToHost(ip, 0); // Mặc định coi Host là Trắng
+                })
+                .setNegativeButton("QUAY LẠI", (d, w) -> showJoinLobby())
+                .show();
+    }
+
+    private void connectToHost(String ip, int hostColor) {
+        discoveryService.stop();
+        int myColor = (hostColor == 0) ? 1 : 0;
+        controller.setMyProfile("Android Joiner", myColor);
+        controller.setupMultiplayer(false, myColor, ip); // Kết nối TCP 5555
+        showLobbyUI("Android Joiner", myColor, null);
     }
 
     private void showLobbyUI(String myName, int myColor, PlayerProfile opp) {
@@ -128,13 +164,13 @@ public class MainActivity extends AppCompatActivity implements GameUIListener {
     }
 
     // =========================================================
-    // NHÓM 3: ĐỒNG BỘ GAMEPLAY
+    // GAMEPLAY SYNC
     // =========================================================
     @Override
     public void onGameStarted() {
         runOnUiThread(() -> {
             if (discoveryService != null) discoveryService.stop();
-            launchChessBoard(); // Tự động vào bàn cờ
+            launchChessBoard();
         });
     }
 
@@ -145,6 +181,7 @@ public class MainActivity extends AppCompatActivity implements GameUIListener {
         txtStatus = findViewById(R.id.txtStatus);
         layoutYou = findViewById(R.id.layoutYou);
         layoutOpponent = findViewById(R.id.layoutOpponent);
+
         controller.setChessView(chessView);
         chessView.setController(controller);
         findViewById(R.id.btnPause).setOnClickListener(v -> showPauseMenu());
@@ -152,18 +189,23 @@ public class MainActivity extends AppCompatActivity implements GameUIListener {
 
     private void showPauseMenu() {
         controller.isTimeRunning = false;
-        String[] options = {"Continue", "Exit to Menu"};
+        String[] options = {"Tiếp tục", "Thoát ra Menu"};
         new AlertDialog.Builder(this).setItems(options, (dialog, which) -> {
             if (which == 0) controller.isTimeRunning = true;
-            else controller.exitToMenu();
+            else controller.exitToMenu(); // Đồng bộ thoát cả 2 máy
         }).setCancelable(false).show();
     }
 
-    @Override public void onTimerUpdate(int seconds) { runOnUiThread(() -> { if(txtTimer != null) txtTimer.setText(String.format("%02d", seconds)); }); }
-    @Override public void onTurnUpdate(String text, int color, boolean isMyTurn) {
+    @Override
+    public void onTimerUpdate(int seconds) {
+        runOnUiThread(() -> { if(txtTimer != null) txtTimer.setText(String.format("%02d", seconds)); });
+    }
+
+    @Override
+    public void onTurnUpdate(String text, int color, boolean isMyTurn) {
         runOnUiThread(() -> {
             if(txtStatus != null) { txtStatus.setText(text); txtStatus.setTextColor(color); }
-            if(layoutYou != null) {
+            if(layoutYou != null && layoutOpponent != null) {
                 layoutYou.setBackgroundResource(isMyTurn ? R.drawable.bg_player_box_active : R.drawable.bg_player_box);
                 layoutOpponent.setBackgroundResource(isMyTurn ? R.drawable.bg_player_box : R.drawable.bg_player_box_active);
             }
