@@ -1,36 +1,99 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="#121212">
+    android:layout_height="match_parent">
 
-    <TextView
-        android:id="@+id/txtTitle"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="50dp"
-        android:text="CHESS ONLINE"
-        android:textColor="#FFFFFF"
-        android:textSize="36sp"
-        android:textStyle="bold" />
+    <ImageView
+        android:id="@+id/imgBackground"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:src="@drawable/menu_bg"
+        android:scaleType="centerCrop" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#80000000" /> <TextView
+    android:id="@+id/txtTitle"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_centerHorizontal="true"
+    android:layout_marginTop="20dp"
+    android:text="CHESS GEMINI"
+    android:textColor="#FFFFFF"
+    android:textSize="36sp"
+    android:textStyle="bold"
+    android:letterSpacing="0.1" />
 
     <LinearLayout
-        android:layout_width="280dp"
+        android:id="@+id/menuContainer"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_centerInParent="true"
+        android:layout_below="@+id/txtTitle"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="20dp"
+        android:gravity="center_horizontal"
         android:orientation="vertical">
 
-        <Button android:id="@+id/btnNewGame" android:layout_width="match_parent" android:layout_height="52dp"
-            android:backgroundTint="#2ECC71" android:text="NEW GAME (OFF)" android:textColor="#FFF" android:layout_marginBottom="10dp"/>
+        <Button
+            android:id="@+id/btnNewGame"
+            android:layout_width="200dp"
+            android:layout_height="45dp"
+            android:backgroundTint="#45F59C"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:text="NEW GAME"
+            android:textColor="#FFFFFF"
+            android:textSize="16sp"
+            android:textStyle="bold" />
 
-        <Button android:id="@+id/btnMultiplayer" android:layout_width="match_parent" android:layout_height="52dp"
-            android:backgroundTint="#9B59B6" android:text="MULTIPLAYER (ON)" android:textColor="#FFF" android:layout_marginBottom="10dp"/>
+        <Button
+            android:id="@+id/btnMultiplayer"
+            android:layout_width="200dp"
+            android:layout_height="45dp"
+            android:backgroundTint="#9B59B6"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:text="MULTIPLAYER"
+            android:textColor="#FFFFFF"
+            android:textSize="16sp"
+            android:textStyle="bold" />
 
-        <Button android:id="@+id/btnSaveLoad" android:layout_width="match_parent" android:layout_height="52dp"
-            android:backgroundTint="#3498DB" android:text="SAVE / LOAD" android:textColor="#FFF" android:layout_marginBottom="10dp"/>
+        <Button
+            android:id="@+id/btnLoadGame"
+            android:layout_width="200dp"
+            android:layout_height="45dp"
+            android:backgroundTint="#3498DB"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:text="LOAD GAME"
+            android:textColor="#FFFFFF"
+            android:textSize="16sp"
+            android:textStyle="bold" />
 
-        <Button android:id="@+id/btnExit" android:layout_width="match_parent" android:layout_height="52dp"
-            android:backgroundTint="#E74C3C" android:text="EXIT GAME" android:textColor="#FFF" />
+        <Button
+            android:id="@+id/btnSettings"
+            android:layout_width="200dp"
+            android:layout_height="45dp"
+            android:backgroundTint="#95A5A6"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:text="SETTINGS"
+            android:textColor="#FFFFFF"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+
+        <Button
+            android:id="@+id/btnExit"
+            android:layout_width="200dp"
+            android:layout_height="45dp"
+            android:backgroundTint="#E74C3C"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:text="EXIT"
+            android:textColor="#FFFFFF"
+            android:textSize="16sp"
+            android:textStyle="bold" />
     </LinearLayout>
+
 </RelativeLayout>

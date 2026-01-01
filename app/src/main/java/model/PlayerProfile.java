@@ -13,4 +13,6 @@ public class PlayerProfile implements Serializable {
         this.color = color;
         this.ip = ip;
     }
+    // Constructor mặc định (cần thiết cho một số thư viện chuyển đổi dữ liệu)
+    public PlayerProfile() {}
 }

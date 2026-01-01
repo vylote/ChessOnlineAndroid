@@ -2,7 +2,8 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#0F0F0F">
+    android:background="#0F0F0F"
+    android:padding="20dp">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -59,4 +60,18 @@
                 android:layout_marginTop="12dp"/>
         </LinearLayout>
     </LinearLayout>
+
+    <Button
+        android:id="@+id/btnLobbyAction"
+        android:layout_width="200dp"
+        android:layout_height="60dp"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginBottom="50dp"
+        android:backgroundTint="#C83232"
+        android:text="CANCEL"
+        android:textColor="#FFFFFF"
+        android:textStyle="bold"
+        android:textSize="18sp"/>
+
 </RelativeLayout>

@@ -29,11 +29,13 @@
             android:padding="10dp">
 
             <View
+                android:id="@+id/viewOppColorInGame"
                 android:layout_width="25dp"
                 android:layout_height="25dp"
                 android:background="@drawable/circle_black" />
 
             <TextView
+                android:id="@+id/txtOppNameInGame"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="10dp"
@@ -99,11 +101,13 @@
             android:padding="10dp">
 
             <View
+                android:id="@+id/viewMyColorInGame"
                 android:layout_width="25dp"
                 android:layout_height="25dp"
                 android:background="@drawable/circle_white" />
 
             <TextView
+                android:id="@+id/txtMyNameInGame"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="10dp"

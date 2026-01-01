@@ -45,8 +45,10 @@ public class NetworkManager {
 
     private void setupStreams() throws IOException {
         out = new ObjectOutputStream(socket.getOutputStream());
-        out.flush();
+        out.flush(); // Phải có flush trước khi tạo Input
         in = new ObjectInputStream(socket.getInputStream());
+
+        // Gửi tín hiệu kết nối thành công về Controller
         uiHandler.post(() -> controller.onOpponentConnected());
     }
 
@@ -58,11 +60,18 @@ public class NetworkManager {
         }).start();
     }
 
+    // Đảm bảo sendConfig của Android dùng Thread để tránh block socket
     public void sendConfig(GameConfigPacket packet) {
         new Thread(() -> {
             try {
-                if (out != null) { out.writeObject(packet); out.flush(); out.reset(); }
-            } catch (IOException e) { e.printStackTrace(); }
+                if (out != null) {
+                    out.writeObject(packet);
+                    out.flush();
+                    out.reset();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }).start();
     }
 

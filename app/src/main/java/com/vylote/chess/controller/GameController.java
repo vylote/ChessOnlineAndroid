@@ -12,11 +12,12 @@ import com.vylote.chess.utility.*;
 import com.vylote.chess.ui.ChessView;
 import java.util.ArrayList;
 import java.util.concurrent.CopyOnWriteArrayList;
-
 import model.GameConfigPacket;
 import model.MovePacket;
+import model.PlayerProfile;
 
 public class GameController implements Runnable {
+    // --- 1. FIELDS ---
     private final Context context;
     private ChessView chessView;
     private GameUIListener uiListener;
@@ -41,7 +42,21 @@ public class GameController implements Runnable {
     public boolean isMultiplayer = false, isServer = false;
     public int playerColor = WHITE;
     public NetworkManager netManager;
-    private String myName = "Player";
+    private String myName = "Android Player";
+    private PlayerProfile opponentProfile;
+
+    // =========================================================
+    // NHÓM MỚI: CÁC PHƯƠNG THỨC GETTER
+    // =========================================================
+    public Board getBoard() { return board; }
+    public Piece getActiveP() { return activeP; }
+    public boolean isPromotion() { return promotion; }
+    public ArrayList<int[]> getValidMoves() { return validMoves; }
+    public CopyOnWriteArrayList<Piece> getSimPieces() { return simPieces; }
+    public ArrayList<Piece> getPromoPieces() { return promoPieces; }
+    public Context getContext() { return context; }
+    public boolean isGameOver() { return gameOver; }
+    public int getCurrentColor() { return currentColor; }
 
     public GameController(Context context, ChessView chessView, GameUIListener uiListener) {
         this.context = context; this.chessView = chessView; this.uiListener = uiListener;
@@ -52,7 +67,7 @@ public class GameController implements Runnable {
 
     public void startNewGame() {
         pieces.clear(); simPieces.clear(); setPieces(); copyPieces(pieces, simPieces);
-        currentColor = WHITE; gameOver = false; promotion = false; // RESET LỖI TỐI MÀN
+        currentColor = WHITE; gameOver = false; promotion = false;
         activeP = null; validMoves.clear(); promoPieces.clear();
         resetTime(); isTimeRunning = true; updateTurnUI();
         if (gameThread == null || !gameThread.isAlive()) { gameThread = new Thread(this); gameThread.start(); }
@@ -85,27 +100,45 @@ public class GameController implements Runnable {
     }
 
     public void onOpponentConnected() {
-        uiHandler.post(() -> {
-            // Tự động chuyển từ màn hình VS sang bàn cờ sau 1.5s
-            new android.os.Handler().postDelayed(() -> {
-                if (uiListener != null) {
-                    uiListener.onGameStarted(); // Activity sẽ gọi launchChessBoard()
-                    startNewGame();
-                }
-            }, 1500);
-        });
+        if (isServer) netManager.sendConfig(new GameConfigPacket(this.playerColor, this.myName));
     }
 
     public void onConfigReceived(GameConfigPacket p) {
+        opponentProfile = new PlayerProfile(p.playerName, p.hostColor, "");
         if (!isServer) {
             this.playerColor = (p.hostColor == WHITE) ? BLACK : WHITE;
             netManager.sendConfig(new GameConfigPacket(this.playerColor, this.myName));
         }
+
         uiHandler.post(() -> {
-            new Handler(Looper.getMainLooper()).postDelayed(() -> {
-                if (uiListener != null) { uiListener.onGameStarted(); startNewGame(); }
-            }, 1500);
+            if (uiListener != null) {
+                uiListener.onGameStarted();
+                uiListener.onTurnUpdate("ĐÃ KẾT NỐI. CHỜ HOST...", Color.YELLOW, false);
+            }
         });
+    }
+
+    // SỬA LỖI ĐỒNG BỘ TẠI ĐÂY
+    public void receiveNetworkMove(MovePacket packet) {
+        // -2 là lệnh từ PC Host, -3 là lệnh từ Android Host
+        if (packet.oldCol == -2 || packet.oldCol == -3) {
+            uiHandler.post(() -> {
+                if (context instanceof MainActivity) {
+                    ((MainActivity) context).startCountdownSync();
+                }
+            });
+            return;
+        }
+
+        for (Piece p : simPieces) {
+            if (p.col == packet.oldCol && p.row == packet.oldRow) {
+                activeP = p; activeP.canMove(packet.newCol, packet.newRow);
+                simulateClickToMove(packet.newCol, packet.newRow);
+                if (packet.promotionType != -1) replacePawnAndFinishNetwork(packet.promotionType);
+                else activeP.finishMove();
+                finalizeTurn(); break;
+            }
+        }
     }
 
     public void handleTouchInput(int col, int row) {
@@ -126,13 +159,12 @@ public class GameController implements Runnable {
             if (valid) {
                 int oc = activeP.col, or = activeP.row;
                 simulateClickToMove(col, row);
-                if (canPromote()) { setPromoPieces(); promotion = true; } // BẬT TỐI MÀN CHUẨN
+                if (canPromote()) { setPromoPieces(); promotion = true; }
                 else finalizeMoveNetwork(oc, or, col, row, -1);
             } else { activeP = null; validMoves.clear(); }
         }
     }
 
-    // --- LOGIC THĂNG CẤP (PROMOTION) ---
     public boolean canPromote() {
         if (activeP == null || activeP.type != Type.PAWN) return false;
         return (activeP.color == WHITE && activeP.row == 0) || (activeP.color == BLACK && activeP.row == 7);
@@ -177,10 +209,18 @@ public class GameController implements Runnable {
         currentColor = (currentColor == WHITE) ? BLACK : WHITE; resetTime(); updateTurnUI();
     }
 
-    // --- HELPERS ---
-    public void setupMultiplayer(boolean h, int c, String i) { this.isMultiplayer = true; this.isServer = h; this.playerColor = c; this.netManager = new NetworkManager(this); if (h) netManager.hostGame(5555); else netManager.joinGame(i, 5555); }
-    public void receiveNetworkMove(MovePacket packet) { for (Piece p : simPieces) if (p.col == packet.oldCol && p.row == packet.oldRow) { activeP = p; activeP.canMove(packet.newCol, packet.newRow); simulateClickToMove(packet.newCol, packet.newRow); if (packet.promotionType != -1) replacePawnAndFinishNetwork(packet.promotionType); else activeP.finishMove(); finalizeTurn(); break; } }
-    public void simulateClickToMove(int tc, int tr) { copyPieces(pieces, simPieces); if (activeP.gettingHitP(tc, tr) != null) simPieces.remove(activeP.gettingHitP(tc, tr)); activeP.col = tc; activeP.row = tr; }
+    public void setupMultiplayer(boolean h, int c, String i) {
+        this.isMultiplayer = true; this.isServer = h; this.playerColor = c;
+        this.netManager = new NetworkManager(this);
+        if (h) netManager.hostGame(5555); else netManager.joinGame(i, 5555);
+    }
+
+    public void simulateClickToMove(int tc, int tr) {
+        copyPieces(pieces, simPieces);
+        if (activeP.gettingHitP(tc, tr) != null) simPieces.remove(activeP.gettingHitP(tc, tr));
+        activeP.col = tc; activeP.row = tr;
+    }
+
     private void setPieces() { pieces.clear(); ChessSetupUtility.setupStandardGame(pieces); for (Piece p : pieces) p.image = ImageLoader.getPieceImage(getPieceKey(p)); }
     private String getPieceKey(Piece p) { return (p.color == WHITE ? "w_" : "b_") + p.type.toString().toLowerCase(); }
     public void copyPieces(CopyOnWriteArrayList<Piece> s, CopyOnWriteArrayList<Piece> t) { t.clear(); t.addAll(s); }
@@ -189,34 +229,9 @@ public class GameController implements Runnable {
     public String getMyName() { return myName; }
     public int getDisplayCol(int c) { return (isMultiplayer && playerColor == BLACK) ? 7 - c : c; }
     public int getDisplayRow(int r) { return (isMultiplayer && playerColor == BLACK) ? 7 - r : r; }
-    private void updateTurnUI() { if (uiListener == null) return; boolean myTurn = isMultiplayer ? (currentColor == playerColor) : (currentColor == WHITE); uiListener.onTurnUpdate(myTurn ? "YOUR TURN" : "WAITING...", Color.WHITE, myTurn); }
+    public PlayerProfile getOpponentProfile() { return opponentProfile; }
+    private void updateTurnUI() { if (uiListener == null) return; boolean myTurn = isMultiplayer ? (currentColor == playerColor) : (currentColor == WHITE); uiListener.onTurnUpdate(myTurn ? "LƯỢT BẠN" : "ĐỐI THỦ ĐANG ĐI...", Color.WHITE, myTurn); }
     public void setChessView(ChessView v) { this.chessView = v; }
-    public CopyOnWriteArrayList<Piece> getSimPieces() { return simPieces; }
-    public Board getBoard() { return board; }
-    public Piece getActiveP() { return activeP; }
-    public ArrayList<int[]> getValidMoves() { return validMoves; }
-    public boolean isPromotion() { return promotion; }
-    public ArrayList<Piece> getPromoPieces() { return promoPieces; }
-    public void exitToMenu() {
-        isTimeRunning = false;
-        if (netManager != null) {
-            netManager.closeConnection(); // Đóng socket ngay lập tức
-            netManager = null;
-        }
-
-        isMultiplayer = false;
-        gameOver = false;
-        promotion = false; // Reset trạng thái để tránh lỗi màn hình tối
-
-        uiHandler.post(() -> {
-            if (context instanceof MainActivity) {
-                ((MainActivity) context).showMenu(); // Quay lại giao diện Menu chính
-            }
-        });
-    }
+    public void exitToMenu() { isTimeRunning = false; if (netManager != null) { netManager.closeConnection(); netManager = null; } isMultiplayer = false; isServer = false; opponentProfile = null; uiHandler.post(() -> { if (context instanceof MainActivity) ((MainActivity) context).showMenu(); }); }
     private void calculateValidMoves(Piece p) { validMoves.clear(); for (int r=0; r<8; r++) for (int c=0; c<8; c++) if (p.canMove(c, r)) validMoves.add(new int[]{c, r, (p.gettingHitP(c, r) != null ? 1 : 0)}); }
-
-    public Context getContext() {
-        return context;
-    }
 }
