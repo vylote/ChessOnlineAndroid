@@ -341,4 +341,27 @@ public class MainActivity extends AppCompatActivity implements GameUIListener {
         super.onDestroy();
         if (audioManager != null) audioManager.release();
     }
+
+    // Trong MainActivity.java
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        // Khi người chơi nhấn Home hoặc có cuộc gọi đến (App đi vào background)
+        if (audioManager != null) {
+            audioManager.pauseBGM();
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Khi người chơi quay lại ứng dụng từ màn hình Home hoặc đa nhiệm
+        if (audioManager != null) {
+            audioManager.resumeBGM();
+        }
+
+        // Đảm bảo chế độ toàn màn hình vẫn hoạt động khi quay lại
+        applyImmersiveMode();
+    }
 }

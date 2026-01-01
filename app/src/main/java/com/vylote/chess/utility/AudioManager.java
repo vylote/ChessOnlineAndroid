@@ -92,4 +92,18 @@ public class AudioManager {
             soundMap.clear();
         }
     }
+    // Thêm vào AudioManager.java
+
+    public void pauseBGM() {
+        if (bgmPlayer != null && bgmPlayer.isPlaying()) {
+            bgmPlayer.pause();
+        }
+    }
+
+    public void resumeBGM() {
+        if (bgmPlayer != null && !bgmPlayer.isPlaying()) {
+            bgmPlayer.setVolume(bgmVolume, bgmVolume); // Đảm bảo âm lượng đúng
+            bgmPlayer.start();
+        }
+    }
 }
