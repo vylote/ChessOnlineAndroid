@@ -38,7 +38,7 @@
         <Button
             android:id="@+id/btnNewGame"
             android:layout_width="200dp"
-            android:layout_height="45dp"
+            android:layout_height="48dp"
             android:backgroundTint="#45F59C"
             android:insetTop="0dp"
             android:insetBottom="0dp"
@@ -50,7 +50,7 @@
         <Button
             android:id="@+id/btnMultiplayer"
             android:layout_width="200dp"
-            android:layout_height="45dp"
+            android:layout_height="48dp"
             android:backgroundTint="#9B59B6"
             android:insetTop="0dp"
             android:insetBottom="0dp"
@@ -62,7 +62,7 @@
         <Button
             android:id="@+id/btnLoadGame"
             android:layout_width="200dp"
-            android:layout_height="45dp"
+            android:layout_height="48dp"
             android:backgroundTint="#3498DB"
             android:insetTop="0dp"
             android:insetBottom="0dp"
@@ -74,7 +74,7 @@
         <Button
             android:id="@+id/btnSettings"
             android:layout_width="200dp"
-            android:layout_height="45dp"
+            android:layout_height="48dp"
             android:backgroundTint="#95A5A6"
             android:insetTop="0dp"
             android:insetBottom="0dp"
@@ -86,7 +86,7 @@
         <Button
             android:id="@+id/btnExit"
             android:layout_width="200dp"
-            android:layout_height="45dp"
+            android:layout_height="48dp"
             android:backgroundTint="#E74C3C"
             android:insetTop="0dp"
             android:insetBottom="0dp"
